@@ -19,7 +19,8 @@ The game data is not included: you need the files of the PC DOS version
 
 Controls: D-pad = move (up = jump, down = crouch), A = action (run, kick,
 shoot, hold to charge the gun), B = jump, GAME = pause, PAUSE/SET =
-Retro-Go menu (savestates, display). A skips the intro.
+Retro-Go menu (savestates, display; Options > "Swap A/B" exchanges A and
+B). A skips the intro.
 
 ---
 
@@ -44,5 +45,6 @@ PC DOS (`MEMLIST.BIN` et `BANK01` à `BANK0D`).
 
 Commandes : croix = déplacements (haut = saut, bas = s'accroupir), A = action
 (courir, donner un coup de pied, tirer, maintenir pour charger le pistolet),
-B = saut, GAME = pause, PAUSE/SET = menu Retro-Go (sauvegardes, affichage).
+B = saut, GAME = pause, PAUSE/SET = menu Retro-Go (sauvegardes, affichage ;
+Options > « Inverser A/B » échange A et B).
 A passe l'intro.

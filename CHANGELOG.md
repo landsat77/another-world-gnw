@@ -7,6 +7,13 @@ section as the GitHub Release notes.
 
 ## [Unreleased]
 
+## [v1.1.0] - 2026-10-18
+
+### Added
+
+- Pause menu option "Swap A/B" (A = jump, B = action), saved per pack in
+  `/data/anotherworld/<name>/gnw_options.bin`.
+
 ## [v1.0.0] - 2026-10-18
 
 ### Added

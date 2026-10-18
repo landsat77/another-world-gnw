@@ -49,7 +49,8 @@ starts with the intro. Press A to skip the intro.
 | PAUSE/SET | Retro-Go menu |
 
 The Retro-Go menu adds savestates (they replace the game's access codes,
-which need a keyboard). Display "Scaling": *Off* shows the original 320x200
+which need a keyboard) and, in *Options*, "Swap A/B" (A = jump, B = action;
+saved for the next starts). Display "Scaling": *Off* shows the original 320x200
 picture with black borders, the other modes stretch it to 320x240, the 4:3
 aspect ratio of the original game ("Filtering" smooths the stretched lines).
 

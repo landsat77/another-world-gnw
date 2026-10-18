@@ -245,17 +245,52 @@ void aw_plat_poll(void)
  *   A                action: run (with a direction), shoot, kick, charge
  *                    the gun (held)
  *   B                jump (same as up)
+ *   (A and B swapped with the "Swap A/B" option of the pause menu)
  *   GAME / START     pause
  *   PAUSE/SET        retro-go menu (savestates, ...)
  */
+/* Options (saved per pack): "Swap A/B" (A = jump, B = action) */
+typedef struct {
+    uint32_t magic;
+    uint8_t swap_ab;
+    uint8_t reserved[3];
+} aw_options_t;
+#define AW_OPTIONS_MAGIC 0x41574F31 /* "AWO1" */
+static aw_options_t options = { AW_OPTIONS_MAGIC, 0, { 0, 0, 0 } };
+static char options_path[200];
+
+static void options_load(void)
+{
+    FILE *f = fopen(options_path, "rb");
+    if (!f)
+        return;
+    aw_options_t o;
+    if (fread(&o, sizeof(o), 1, f) == 1 && o.magic == AW_OPTIONS_MAGIC)
+        options = o;
+    fclose(f);
+}
+
+static void options_save(void)
+{
+    if (!options_path[0])
+        return;
+    FILE *f = fopen(options_path, "wb");
+    if (!f)
+        return;
+    fwrite(&options, sizeof(options), 1, f);
+    fclose(f);
+}
+
 static uint32_t map_buttons(const odroid_gamepad_state_t *j)
 {
     uint32_t b = 0;
+    bool action = options.swap_ab ? j->values[ODROID_INPUT_B] : j->values[ODROID_INPUT_A];
+    bool jump = options.swap_ab ? j->values[ODROID_INPUT_A] : j->values[ODROID_INPUT_B];
     if (j->values[ODROID_INPUT_LEFT])  b |= AW_BTN_LEFT;
     if (j->values[ODROID_INPUT_RIGHT]) b |= AW_BTN_RIGHT;
-    if (j->values[ODROID_INPUT_UP] || j->values[ODROID_INPUT_B]) b |= AW_BTN_UP;
+    if (j->values[ODROID_INPUT_UP] || jump) b |= AW_BTN_UP;
     if (j->values[ODROID_INPUT_DOWN])  b |= AW_BTN_DOWN;
-    if (j->values[ODROID_INPUT_A])     b |= AW_BTN_ACTION;
+    if (action)                        b |= AW_BTN_ACTION;
     if (j->values[ODROID_INPUT_START] || j->values[ODROID_INPUT_X]) b |= AW_BTN_PAUSE;
     return b;
 }
@@ -271,13 +306,45 @@ static uint32_t map_buttons(const odroid_gamepad_state_t *j)
  * (GAME), the safe point is not reached: the menu opens from the service,
  * without savestates.
  */
+static const gw_i18n_entry_t i18n_yes[] = {
+    { "en", "Yes" }, { "fr", "Oui" }, { "es", "S\xc3\xad" }, { "de", "Ja" }, { "it", "S\xc3\xac" }, { "pt", "Sim" }, GW_I18N_END
+};
+static const gw_i18n_entry_t i18n_no[] = {
+    { "en", "No" }, { "fr", "Non" }, { "es", "No" }, { "de", "Nein" }, { "it", "No" }, { "pt", "N\xc3\xa3o" }, GW_I18N_END
+};
+static const gw_i18n_entry_t i18n_swap_ab[] = {
+    { "en", "Swap A/B" }, { "fr", "Inverser A/B" }, { "es", "Invertir A/B" }, { "de", "A/B tauschen" }, { "it", "Inverti A/B" }, { "pt", "Inverter A/B" }, GW_I18N_END
+};
+static char swap_ab_value[12];
+
+static void swap_ab_label(char *dst)
+{
+    strncpy(dst, gw_i18n(options.swap_ab ? i18n_yes : i18n_no), 11);
+    dst[11] = '\0';
+}
+
+static bool swap_ab_cb(odroid_dialog_choice_t *option, odroid_dialog_event_t event, uint32_t repeat)
+{
+    if (event == ODROID_DIALOG_PREV || event == ODROID_DIALOG_NEXT || event == ODROID_DIALOG_ENTER) {
+        options.swap_ab = !options.swap_ab;
+        options_save();
+    }
+    swap_ab_label(option->value);
+    return false;
+}
+
+static odroid_dialog_choice_t game_options[2];
+
 static void run_input_loop(void)
 {
     for (int i = 0; i < ODROID_INPUT_MAX; i++)
         joystick.values[i] |= latched_buttons.values[i];
     memset(&latched_buttons, 0, sizeof(latched_buttons));
 
-    common_emu_input_loop(&joystick, NULL, &repaint);
+    swap_ab_label(swap_ab_value);
+    game_options[0] = (odroid_dialog_choice_t){300, gw_i18n(i18n_swap_ab), swap_ab_value, 1, &swap_ab_cb};
+    game_options[1] = (odroid_dialog_choice_t)ODROID_DIALOG_CHOICE_LAST;
+    common_emu_input_loop(&joystick, game_options, &repaint);
 
     /* the time spent in the menu does not count */
     last_tick_ms = get_elapsed_time();
@@ -402,6 +469,20 @@ void app_main(uint8_t load_state, uint8_t start_paused, int8_t save_slot)
     pack_path_for(ACTIVE_FILE->path, pack_path, sizeof(pack_path));
     const char *pack_name = strrchr(pack_path, '/');
     pack_name = pack_name ? pack_name + 1 : pack_path;
+
+    /* Options: /data/anotherworld/<stem>/gnw_options.bin */
+    {
+        char name[64], dir[160];
+        snprintf(name, sizeof(name), "%s", pack_name);
+        char *dot = strrchr(name, '.');
+        if (dot)
+            *dot = '\0';
+        rg_storage_mkdir(ODROID_BASE_PATH_SAVES "/anotherworld");
+        snprintf(dir, sizeof(dir), ODROID_BASE_PATH_SAVES "/anotherworld/%s", name);
+        rg_storage_mkdir(dir);
+        snprintf(options_path, sizeof(options_path), "%s/gnw_options.bin", dir);
+        options_load();
+    }
 
     /* Map the asset pack into the external flash */
     FILE *probe = fopen(pack_path, "rb");
