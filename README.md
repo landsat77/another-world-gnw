@@ -1,5 +1,8 @@
 # Another World for Game & Watch Retro-Go SD
 
+<img width="2880" height="2160" alt="image" src="https://github.com/user-attachments/assets/7143681f-f486-4fab-a573-e95cc28ea166" />
+
+
 Eric Chahi's **Another World** (1991, *Out of This World* in America), PC DOS
 version, running on the Nintendo Game & Watch with the
 [Retro-Go SD](https://github.com/sylverb/game-and-watch-retro-go-sd) firmware,
